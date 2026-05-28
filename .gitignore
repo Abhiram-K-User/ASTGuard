@@ -1,0 +1,135 @@
+# =============================================================================
+# ASTGuard — Code Plagiarism Checker  |  .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# Byte-compiled / cached files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+coverage.xml
+
+# MyPy / Pyright / Pyrefly type-checker caches
+.mypy_cache/
+.dmypy.json
+.pyright/
+pyrightconfig.json
+.pyrefly/
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Logs generated during development
+*.log
+
+# -----------------------------------------------------------------------------
+# Node.js / npm / Vite (frontend)
+# -----------------------------------------------------------------------------
+
+# Dependencies
+frontend/node_modules/
+node_modules/
+
+# Vite production build output
+frontend/dist/
+frontend/.vite/
+
+# npm / yarn / pnpm lock files are usually committed; ignore only local caches
+.npm/
+.yarn/cache
+.pnpm-store/
+
+# Environment variable files  (never commit secrets)
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# -----------------------------------------------------------------------------
+# IDE & Editor
+# -----------------------------------------------------------------------------
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# -----------------------------------------------------------------------------
+# Operating System
+# -----------------------------------------------------------------------------
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+
+# -----------------------------------------------------------------------------
+# Misc / Project-specific
+# -----------------------------------------------------------------------------
+
+# Scratch / temporary files created during development
+backend/scratch/
+*.tmp
+*.bak
+*.orig
+
+# Test output artefacts (the script itself is committed, its output is not)
+backend/test_output.txt

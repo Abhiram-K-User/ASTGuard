@@ -1,0 +1,70 @@
+/* ==========================================================================
+   ASTGuard — Global Design System
+   ========================================================================== */
+
+/* ── Google Fonts are loaded via index.html ── */
+
+/* ── CSS Custom Properties ─────────────────────────────────────────────── */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Colors */
+  --bg-deep:      #05060f;
+  --bg-surface:   #0d0f1e;
+  --bg-card:      #111827;
+  --bg-card-alt:  #0a0c1c;
+
+  --brand-400: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+
+  --border:     rgba(99, 102, 241, 0.18);
+  --border-hover: rgba(99, 102, 241, 0.4);
+  --glow:       rgba(99, 102, 241, 0.25);
+
+  --text-primary:   #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted:     #4b5563;
+  --text-dim:       #374151;
+
+  /* Verdict colors */
+  --safe-color:       #10b981;
+  --suspicious-color: #f59e0b;
+  --blatant-color:    #ef4444;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 99px; }
+
+/* ── Selection ─────────────────────────────────────────────────────────── */
+::selection { background: rgba(99,102,241,0.35); color: #e0e7ff; }
