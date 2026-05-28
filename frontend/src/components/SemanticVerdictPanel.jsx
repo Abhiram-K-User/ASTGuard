@@ -1,11 +1,11 @@
 /**
- * SemanticVerdictPanel — AI Streaming Analysis (FSM state machine)
+ * AlgorithmicVerdictPanel — Structural Verdict Report (FSM state machine)
  * States: idle → thinking → streaming → done
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Cpu, RefreshCw } from 'lucide-react';
+import { BarChart2, Cpu, RefreshCw } from 'lucide-react';
 import { streamSemanticVerdict } from '../lib/ai/semanticVerdict';
 import { computeTED } from '../lib/daa/treeEditDistance';
 import { rollingHashes, buildCollisionMap } from '../lib/daa/rabinKarpHash';
@@ -90,21 +90,21 @@ export default function SemanticVerdictPanel({ result }) {
           background: vc.bg, border: `1px solid ${vc.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Brain size={13} color={vc.color} />
+          <BarChart2 size={13} color={vc.color} />
         </div>
         <div>
           <div style={{
             fontFamily: 'var(--font-sans)', fontSize: '12px', fontWeight: 700,
             color: 'var(--text-primary)', transition: 'color var(--t-slow)',
           }}>
-            AI Semantic Analysis
+            Algorithmic Verdict Report
           </div>
           <div style={{
             fontFamily: 'var(--font-mono)', fontSize: '9px',
             color: 'var(--text-muted)', marginTop: '1px',
             transition: 'color var(--t-slow)',
           }}>
-            LCS DP · Tree Edit Distance · Rabin-Karp
+            LCS Bigrams · Tree Edit Distance · Rabin-Karp Hashing
           </div>
         </div>
 
@@ -113,7 +113,7 @@ export default function SemanticVerdictPanel({ result }) {
             {state === 'thinking' && (
               <motion.span key="thinking" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Cpu size={10} className="animate-spin" /> Analyzing…
+                <Cpu size={10} className="animate-spin" /> Computing…
               </motion.span>
             )}
             {state === 'done' && (

@@ -5,7 +5,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
-import { Play, Loader2, AlertTriangle, BarChart3, GitMerge, Hash, TrendingUp, Brain } from 'lucide-react';
+import { Play, Loader2, AlertTriangle, BarChart3, GitMerge, Hash, TrendingUp, BarChart2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 import StructuralDiff       from '../components/ast/StructuralDiff';
@@ -24,7 +24,7 @@ const VC = {
 };
 
 const TABS = [
-  { key:'verdict',    label:'AI Verdict',  icon:Brain    },
+  { key:'verdict',    label:'Verdict Report',  icon:BarChart2  },
   { key:'diff',       label:'Struct Diff', icon:GitMerge },
   { key:'hash',       label:'Hash Map',    icon:Hash     },
   { key:'complexity', label:'Complexity',  icon:TrendingUp },
