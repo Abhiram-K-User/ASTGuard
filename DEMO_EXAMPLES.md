@@ -32,7 +32,7 @@ for item in output:
     print(item["name"], "->", item["grade"])
 ```
 
-**Code B** *(only identifiers changed — expected ~100 %)*
+**Code B** 
 ```python
 def get_letter(pts):
     if pts >= 90:
