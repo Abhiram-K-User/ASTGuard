@@ -1,4 +1,4 @@
-import { ShieldCheck, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Header() {
