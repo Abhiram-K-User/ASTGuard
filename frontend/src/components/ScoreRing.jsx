@@ -1,78 +1,81 @@
-import { useEffect, useRef, useState } from 'react';
-import { VERDICTS } from '../constants';
-
-const CIRCUMFERENCE = 2 * Math.PI * 68; // r = 68
-
 /**
- * ScoreRing — Animated SVG radial progress ring.
- *
- * Props:
- *   score   : number   — 0‒100
- *   verdict : string   — 'Safe' | 'Suspicious' | 'Blatant'
+ * ScoreRing — Animated SVG Sørensen-Dice similarity meter
  */
-export default function ScoreRing({ score, verdict }) {
-  const [displayed, setDisplayed] = useState(0);
-  const rafRef = useRef(null);
 
-  const color = VERDICTS[verdict]?.color ?? '#6366f1';
+import { motion } from 'framer-motion';
 
-  // Animate the counter number
-  useEffect(() => {
-    let start = null;
-    const duration = 1200;
-    const target = score;
+const R    = 68;
+const CIRC = 2 * Math.PI * R;
 
-    const step = (ts) => {
-      if (!start) start = ts;
-      const elapsed  = ts - start;
-      const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayed(Math.round(eased * target));
-      if (progress < 1) rafRef.current = requestAnimationFrame(step);
-    };
+function verdictColor(score) {
+  if (score >= 78) return '#ef4444';
+  if (score >= 30) return '#f59e0b';
+  return '#22c55e';
+}
 
-    setDisplayed(0);
-    rafRef.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [score]);
-
-  const dashOffset = CIRCUMFERENCE - (score / 100) * CIRCUMFERENCE;
+export default function ScoreRing({ score = 0 }) {
+  const color  = verdictColor(score);
+  const offset = CIRC * (1 - score / 100);
 
   return (
-    <div className="score-ring-container">
-      {/* Pulse ring */}
-      <div
-        className="score-pulse"
-        style={{ borderColor: color }}
+    <div style={{ position: 'relative', width: 148, height: 148, flexShrink: 0 }}>
+      {/* Glow pulse */}
+      <motion.div
+        animate={{ scale: [1, 1.07, 1], opacity: [0.25, 0.5, 0.25] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'absolute', inset: -5,
+          borderRadius: '50%',
+          border: `2px solid ${color}`,
+          opacity: 0.25,
+        }}
       />
 
-      {/* SVG Ring */}
-      <svg
-        className="score-ring-svg"
-        viewBox="0 0 160 160"
-        aria-hidden="true"
-      >
-        <circle className="score-ring-bg" cx="80" cy="80" r="68" />
-        <circle
-          className="score-ring-progress"
-          cx="80"
-          cy="80"
-          r="68"
-          stroke={color}
-          strokeDasharray={CIRCUMFERENCE}
-          strokeDashoffset={dashOffset}
-          style={{ filter: `drop-shadow(0 0 6px ${color})` }}
+      <svg width="148" height="148" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="74" cy="74" r={R}
+          fill="none"
+          stroke="var(--card-border)"
+          strokeWidth="9"
+        />
+        <motion.circle
+          cx="74" cy="74" r={R}
+          fill="none" stroke={color} strokeWidth="9" strokeLinecap="round"
+          strokeDasharray={CIRC}
+          initial={{ strokeDashoffset: CIRC }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.3, ease: [0.34, 1.56, 0.64, 1] }}
+          style={{ filter: `drop-shadow(0 0 8px ${color}88)` }}
         />
       </svg>
 
-      {/* Center text */}
-      <div className="score-ring-center">
-        <span className="score-number" style={{ color }}>
-          {displayed}
-        </span>
-        <span className="score-pct" style={{ color }}>%</span>
-        <span className="score-sub">Similarity</span>
+      {/* Center label */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 2,
+      }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.45 }}
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '1.9rem', fontWeight: 900,
+            color, letterSpacing: '-2px', lineHeight: 1,
+          }}
+        >
+          {Math.round(score)}<span style={{ fontSize: '0.9rem', fontWeight: 700 }}>%</span>
+        </motion.div>
+        <div style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '0.58rem', fontWeight: 700,
+          letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+          marginTop: '2px',
+          transition: 'color var(--t-slow)',
+        }}>
+          Similarity
+        </div>
       </div>
     </div>
   );

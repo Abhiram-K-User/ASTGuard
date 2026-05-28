@@ -1,198 +1,70 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import './App.css';
+import { motion } from 'framer-motion';
+import { ThemeProvider } from './context/ThemeContext';
+import Header        from './components/Header';
+import DashboardView from './views/DashboardView';
+import './index.css';
 
-import Background   from './components/Background';
-import Header       from './components/Header';
-import Hero         from './components/Hero';
-import CodeEditor   from './components/CodeEditor';
-import ResultsPanel from './components/ResultsPanel';
-import { compareCode, fetchExamples } from './services/api';
-import { PLACEHOLDER_A, PLACEHOLDER_B } from './constants';
+/** Teal radial atmosphere + dot grid noise */
+function Background() {
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:0, pointerEvents:'none', overflow:'hidden' }}>
+      {/* Teal top-right glow */}
+      <div style={{
+        position:'absolute', width:700, height:500,
+        top:'-120px', right:'-80px',
+        background:'radial-gradient(ellipse, rgba(20,184,166,0.18) 0%, transparent 70%)',
+        filter:'blur(40px)',
+      }}/>
+      {/* Teal bottom-left glow */}
+      <div style={{
+        position:'absolute', width:500, height:400,
+        bottom:'-80px', left:'-60px',
+        background:'radial-gradient(ellipse, rgba(45,212,191,0.12) 0%, transparent 70%)',
+        filter:'blur(30px)',
+      }}/>
+      {/* Subtle teal mid glow */}
+      <div style={{
+        position:'absolute', width:300, height:300,
+        top:'40%', left:'50%', transform:'translate(-50%,-50%)',
+        background:'radial-gradient(circle, rgba(20,184,166,0.08) 0%, transparent 70%)',
+        filter:'blur(20px)',
+      }}/>
+      {/* Micro radial texture + teal noise */}
+      <div style={{
+        position:'absolute', inset:0,
+        backgroundImage:
+          'radial-gradient(circle at 12% 18%, rgba(20,184,166,0.18) 0%, transparent 38%),' +
+          'radial-gradient(circle at 80% 22%, rgba(45,212,191,0.16) 0%, transparent 42%),' +
+          'radial-gradient(circle at 40% 78%, rgba(20,184,166,0.14) 0%, transparent 40%),' +
+          'radial-gradient(circle, rgba(20,184,166,0.14) 0.6px, transparent 0.7px)',
+        backgroundSize: 'auto, auto, auto, 8px 8px',
+        opacity: 0.45,
+      }} />
+      {/* Dot grid */}
+      <svg width="100%" height="100%" style={{ position:'absolute', inset:0, opacity:0.35 }}>
+        <defs>
+          <pattern id="dots" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.8" fill="rgba(20,184,166,0.26)" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#dots)" />
+      </svg>
+    </div>
+  );
+}
 
 export default function App() {
-  // ── Editor state ────────────────────────────────────────────────────────
-  const [codeA, setCodeA] = useState('');
-  const [codeB, setCodeB] = useState('');
-
-  // ── Examples from backend ────────────────────────────────────────────────
-  const [examples, setExamples]     = useState([]);
-  const [exLoading, setExLoading]   = useState(true);
-  const [exError, setExError]       = useState(false);
-
-  // ── Analysis state ───────────────────────────────────────────────────────
-  const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState(null);
-  const [error, setError]         = useState(null);
-
-  // ── Ref for smooth scroll to results ─────────────────────────────────────
-  const resultsRef = useRef(null);
-
-  // ── Load examples on mount ───────────────────────────────────────────────
-  useEffect(() => {
-    fetchExamples()
-      .then(setExamples)
-      .catch(() => setExError(true))
-      .finally(() => setExLoading(false));
-  }, []);
-
-  // ── Load example pair ────────────────────────────────────────────────────
-  const loadExample = useCallback((ex) => {
-    setCodeA(ex.code_a);
-    setCodeB(ex.code_b);
-    setResult(null);
-    setError(null);
-  }, []);
-
-  // ── Main analyze handler ─────────────────────────────────────────────────
-  const handleAnalyze = useCallback(async () => {
-    const trimA = codeA.trim();
-    const trimB = codeB.trim();
-
-    if (!trimA && !trimB) {
-      setError({ title: 'Empty Input', msg: 'Please enter Python code for both students.' });
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const data = await compareCode(
-        trimA || '# empty',
-        trimB || '# empty'
-      );
-      setResult(data);
-      // Smooth-scroll to results after a short delay
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 120);
-    } catch (e) {
-      setError({ title: 'Analysis Failed', msg: e.message });
-    } finally {
-      setLoading(false);
-    }
-  }, [codeA, codeB]);
-
-  // ── Keyboard shortcut: Ctrl/Cmd + Enter ─────────────────────────────────
-  useEffect(() => {
-    const handler = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        if (!loading) handleAnalyze();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [loading, handleAnalyze]);
-
-  // ── Token counts from last result ─────────────────────────────────────
-  const tokenCountA = result ? result.tokens_a.length : null;
-  const tokenCountB = result ? result.tokens_b.length : null;
-  const hasErrorA   = result ? !!result.error_a : false;
-  const hasErrorB   = result ? !!result.error_b : false;
-
   return (
-    <>
+    <ThemeProvider>
       <Background />
-
-      <div className="app-shell">
+      <motion.div
+        initial={{ opacity:0 }} animate={{ opacity:1 }}
+        transition={{ duration:0.55 }}
+        style={{ position:'relative', zIndex:1, maxWidth:'1360px', margin:'0 auto', padding:'0 1.5rem 5rem' }}
+      >
         <Header />
-        <Hero />
-
-        {/* ── Controls Bar: Examples + Analyze CTA ─────────────────────── */}
-        <div className="controls-bar">
-          <div className="examples-col">
-            <div className="section-label">Load Example Pair</div>
-            <div className="examples-row">
-              {exLoading && (
-                <button className="btn-example" disabled>Loading examples…</button>
-              )}
-              {exError && !exLoading && (
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Start the backend: <code style={{ color: 'var(--brand-500)' }}>python main.py</code>
-                </span>
-              )}
-              {examples.map((ex, i) => (
-                <button
-                  key={i}
-                  id={`ex-btn-${i}`}
-                  className="btn-example"
-                  title={ex.description}
-                  onClick={() => loadExample(ex)}
-                >
-                  {ex.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            id="analyze-btn"
-            className="btn-analyze"
-            onClick={handleAnalyze}
-            disabled={loading}
-            aria-label="Analyze code for structural plagiarism"
-          >
-            {loading ? (
-              <div className="spinner" />
-            ) : (
-              <span>🔬</span>
-            )}
-            <span>{loading ? 'Analyzing…' : 'Analyze Structure'}</span>
-            {!loading && (
-              <span style={{ fontSize: '0.65rem', opacity: 0.6, fontWeight: 400 }}>
-                Ctrl+↵
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* ── Code Editors ─────────────────────────────────────────────── */}
-        <div className="editors-grid">
-          <CodeEditor
-            which="a"
-            value={codeA}
-            onChange={setCodeA}
-            hasError={hasErrorA}
-            tokenCount={tokenCountA}
-          />
-          <CodeEditor
-            which="b"
-            value={codeB}
-            onChange={setCodeB}
-            hasError={hasErrorB}
-            tokenCount={tokenCountB}
-          />
-        </div>
-
-        {/* ── Error Alert ───────────────────────────────────────────────── */}
-        {error && (
-          <div className="error-alert" role="alert">
-            <span className="error-alert-icon">🚨</span>
-            <div>
-              <div className="error-alert-title">{error.title}</div>
-              <div className="error-alert-msg">{error.msg}</div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Results ───────────────────────────────────────────────────── */}
-        <div ref={resultsRef}>
-          {result && <ResultsPanel result={result} />}
-        </div>
-
-        {/* ── Footer ────────────────────────────────────────────────────── */}
-        <footer className="footer">
-          <p>
-            <strong>ASTGuard</strong> — Powered by{' '}
-            <code>Python ast</code> + <code>FastAPI</code> + Dynamic Programming
-            <br />
-            Algorithm: Longest Common Subsequence &nbsp;|&nbsp; Paradigm: Bottom-up DP
-            &nbsp;|&nbsp; Complexity: Θ(m·n)
-          </p>
-        </footer>
-      </div>
-    </>
+        <DashboardView />
+      </motion.div>
+    </ThemeProvider>
   );
 }

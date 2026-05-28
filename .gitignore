@@ -133,3 +133,7 @@ backend/scratch/
 
 # Test output artefacts (the script itself is committed, its output is not)
 backend/test_output.txt
+
+
+#Documentation
+PROJECT_ALGORITHMS.md
