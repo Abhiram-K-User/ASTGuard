@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,62 +7,60 @@
 :root {
 	color-scheme: light;
 
-	--font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
-	--font-sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-	--font-mono: 'JetBrains Mono', Consolas, monospace;
+	--font-display: 'Inter', 'Segoe UI', sans-serif;
+	--font-sans: 'Inter', 'Segoe UI', sans-serif;
+	--font-mono: 'Fira Code', Consolas, monospace;
 
-	--radius-sm: 6px;
-	--radius-md: 10px;
-	--radius-lg: 16px;
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
 	--radius-full: 999px;
 
-	--t-fast: 120ms ease;
-	--t-mid: 220ms ease;
-	--t-slow: 420ms ease;
+	--t-fast: 100ms ease;
+	--t-mid: 200ms ease;
+	--t-slow: 300ms ease;
 
-	--app-bg: #f5f8f8;
-	--surface: #ffffff;
-	--surface-elevated: #eef5f5;
-	--border: #d9e4e4;
+	--app-bg: #FFFFFF;
+	--surface: #FFFFFF;
+	--surface-elevated: #F9FAFB;
+	--border: #E5E7EB;
 
-	--accent: #0f766e;
-	--accent-secondary: #14b8a6;
-	--warning: #f59e0b;
+	--accent: #000000;
+	--accent-secondary: #374151;
+	--warning: #F59E0B;
 
 	--text-primary: #111827;
-	--text-secondary: #4b5563;
-	--text-muted: #6b7280;
-	--text-dim: #94a3b8;
+	--text-secondary: #4B5563;
+	--text-muted: #6B7280;
+	--text-dim: #9CA3AF;
 
-	--card-bg: rgba(255, 255, 255, 0.58);
-	--card-border: rgba(217, 228, 228, 0.7);
-	--card-header-bg: rgba(238, 245, 245, 0.72);
-	--bg-elevated: rgba(238, 245, 245, 0.62);
-
-	--glass-blur: blur(16px) saturate(160%);
+	--card-bg: #FFFFFF;
+	--card-border: #E5E7EB;
+	--card-header-bg: #F9FAFB;
+	--bg-elevated: #F9FAFB;
 }
 
 [data-theme='dark'] {
 	color-scheme: dark;
 
-	--app-bg: #0d1117;
-	--surface: #161c24;
-	--surface-elevated: #1e2631;
-	--border: #2a3441;
+	--app-bg: #0A0A0A;
+	--surface: #0A0A0A;
+	--surface-elevated: #111111;
+	--border: #262626;
 
-	--accent: #14b8a6;
-	--accent-secondary: #2dd4bf;
-	--warning: #f59e0b;
+	--accent: #FFFFFF;
+	--accent-secondary: #D4D4D4;
+	--warning: #F59E0B;
 
-	--text-primary: #f9fafb;
-	--text-secondary: #9ca3af;
-	--text-muted: #94a3b8;
-	--text-dim: #64748b;
+	--text-primary: #F5F5F5;
+	--text-secondary: #A3A3A3;
+	--text-muted: #737373;
+	--text-dim: #525252;
 
-	--card-bg: rgba(22, 28, 36, 0.45);
-	--card-border: rgba(42, 52, 65, 0.75);
-	--card-header-bg: rgba(30, 38, 49, 0.55);
-	--bg-elevated: rgba(30, 38, 49, 0.5);
+	--card-bg: #0A0A0A;
+	--card-border: #262626;
+	--card-header-bg: #111111;
+	--bg-elevated: #111111;
 }
 
 * {
@@ -86,55 +84,6 @@ body {
 .glass {
 	background: var(--card-bg);
 	border: 1px solid var(--card-border);
-	backdrop-filter: var(--glass-blur);
-	box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
-	transition: background var(--t-slow), border-color var(--t-slow), box-shadow var(--t-slow);
-}
-
-.btn-glow {
-	position: relative;
-	overflow: hidden;
-	box-shadow: 0 14px 34px rgba(20, 184, 166, 0.25);
-}
-
-.btn-glow::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-	background: radial-gradient(120px 40px at 50% 0%, rgba(255, 255, 255, 0.6), transparent 70%);
-	opacity: 0;
-	transition: opacity var(--t-mid);
-}
-
-.btn-glow:hover::after {
-	opacity: 1;
-}
-
-.btn-glow > * {
-	position: relative;
-	z-index: 1;
-}
-
-.cursor-blink {
-	animation: cursor-blink 1s steps(2, start) infinite;
-}
-
-@keyframes cursor-blink {
-	50% { opacity: 0; }
-}
-
-.scan-line {
-	position: absolute;
-	left: 0;
-	right: 0;
-	height: 2px;
-	background: linear-gradient(90deg, transparent, var(--accent), transparent);
-	animation: scan-line 1.4s linear infinite;
-}
-
-@keyframes scan-line {
-	0% { transform: translateY(-10%); }
-	100% { transform: translateY(110%); }
 }
 
 .line-exact {
@@ -159,12 +108,3 @@ body {
 .animate-spin {
 	animation: spin 1s linear infinite;
 }
-
-.monaco-editor .cursor {
-	box-shadow: 0 0 10px rgba(20, 184, 166, 0.6);
-}
-
-[data-theme='dark'] .monaco-editor .cursor {
-	box-shadow: 0 0 12px rgba(20, 184, 166, 0.75);
-}
-

@@ -88,7 +88,6 @@ export default function ComplexityDashboard({ result }) {
           {perfCards.map(({ label, value, color, icon: Icon }) => (
             <motion.div
               key={label}
-              className="glass"
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               style={{
                 padding: '10px 12px', borderRadius: 'var(--radius-md)',

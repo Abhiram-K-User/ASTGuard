@@ -149,10 +149,11 @@ export default function SemanticVerdictPanel({ result }) {
         {metrics.map(({ label, value }) => (
           <div
             key={label}
-            className="glass"
             style={{
               padding: '9px 10px', textAlign: 'center',
               borderRadius: 'var(--radius-md)',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
               transition: 'background var(--t-slow), border-color var(--t-slow)',
             }}
           >
@@ -177,7 +178,6 @@ export default function SemanticVerdictPanel({ result }) {
       {/* Streaming text box */}
       <div
         ref={containerRef}
-        className="glass"
         style={{
           padding: '16px',
           borderRadius: 'var(--radius-md)',

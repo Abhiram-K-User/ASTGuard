@@ -1,5 +1,5 @@
 /**
- * DashboardView — Monaco editors + comparison highlighting + glassmorphic UI
+ * DashboardView — Monaco editors + comparison highlighting
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -18,9 +18,9 @@ import { PLACEHOLDER_A, PLACEHOLDER_B } from '../constants';
 
 /* ── Verdict palette ─────────────────────────────────────────────────── */
 const VC = {
-  Safe:       { color:'#22C55E', border:'rgba(34,197,94,0.4)',   bg:'rgba(34,197,94,0.07)',   glow:'rgba(34,197,94,0.15)',  label:'Structurally Distinct' },
-  Suspicious: { color:'#F59E0B', border:'rgba(245,158,11,0.45)', bg:'rgba(245,158,11,0.07)',  glow:'rgba(245,158,11,0.15)', label:'Notable Structural Overlap' },
-  Blatant:    { color:'#EF4444', border:'rgba(239,68,68,0.45)',  bg:'rgba(239,68,68,0.07)',   glow:'rgba(239,68,68,0.15)',  label:'Near-Identical Structure' },
+  Safe:       { color:'#059669', label:'Structurally Distinct' },
+  Suspicious: { color:'#D97706', label:'Notable Structural Overlap' },
+  Blatant:    { color:'#DC2626', label:'Near-Identical Structure' },
 };
 
 const TABS = [
@@ -39,55 +39,50 @@ function registerThemes(monaco) {
   monaco.editor.defineTheme('sg-dark', {
     base:'vs-dark', inherit:true,
     rules:[
-      { token:'keyword',   foreground:'14B8A6', fontStyle:'bold' },
-      { token:'keyword.control', foreground:'2DD4BF', fontStyle:'bold' },
-      { token:'string',    foreground:'5EEAD4' },
-      { token:'string.escape', foreground:'F59E0B' },
-      { token:'comment',   foreground:'64748B', fontStyle:'italic' },
-      { token:'number',    foreground:'F59E0B' },
-      { token:'operator',  foreground:'9CA3AF' },
-      { token:'type',      foreground:'60A5FA' },
-      { token:'identifier',foreground:'F9FAFB' },
-      { token:'delimiter', foreground:'94A3B8' },
-      { token:'delimiter.parenthesis', foreground:'CBD5E1' },
+      { token:'keyword',   foreground:'D4D4D4', fontStyle:'bold' },
+      { token:'keyword.control', foreground:'FFFFFF', fontStyle:'bold' },
+      { token:'string',    foreground:'A3A3A3' },
+      { token:'comment',   foreground:'737373', fontStyle:'italic' },
+      { token:'number',    foreground:'A3A3A3' },
+      { token:'operator',  foreground:'737373' },
+      { token:'type',      foreground:'D4D4D4' },
+      { token:'identifier',foreground:'F5F5F5' },
     ],
     colors:{
-      'editor.background':'#0D1117',
-      'editor.foreground':'#F9FAFB',
-      'editor.lineHighlightBackground':'#1E263180',
-      'editor.selectionBackground':'#14B8A633',
-      'editor.inactiveSelectionBackground':'#14B8A620',
-      'editorLineNumber.foreground':'#2A3441',
-      'editorLineNumber.activeForeground':'#2DD4BF',
-      'editorCursor.foreground':'#14B8A6',
-      'editorIndentGuide.background':'#1E2631',
-      'editorIndentGuide.activeBackground':'#2A3441',
+      'editor.background':'#0A0A0A',
+      'editor.foreground':'#F5F5F5',
+      'editor.lineHighlightBackground':'#111111',
+      'editor.selectionBackground':'#262626',
+      'editor.inactiveSelectionBackground':'#262626',
+      'editorLineNumber.foreground':'#525252',
+      'editorLineNumber.activeForeground':'#A3A3A3',
+      'editorCursor.foreground':'#FFFFFF',
+      'editorIndentGuide.background':'#111111',
+      'editorIndentGuide.activeBackground':'#262626',
       'scrollbar.shadow':'#00000000',
-      'scrollbarSlider.background':'#2A344180',
-      'scrollbarSlider.hoverBackground':'#3D4F6380',
     }
   });
 
   monaco.editor.defineTheme('sg-light', {
     base:'vs', inherit:true,
     rules:[
-      { token:'keyword',   foreground:'0F766E', fontStyle:'bold' },
-      { token:'keyword.control', foreground:'14B8A6', fontStyle:'bold' },
-      { token:'string',    foreground:'0E9F8D' },
+      { token:'keyword',   foreground:'374151', fontStyle:'bold' },
+      { token:'keyword.control', foreground:'111827', fontStyle:'bold' },
+      { token:'string',    foreground:'6B7280' },
       { token:'comment',   foreground:'9CA3AF', fontStyle:'italic' },
-      { token:'number',    foreground:'B45309' },
-      { token:'operator',  foreground:'6B7280' },
-      { token:'type',      foreground:'1D4ED8' },
+      { token:'number',    foreground:'6B7280' },
+      { token:'operator',  foreground:'9CA3AF' },
+      { token:'type',      foreground:'374151' },
     ],
     colors:{
-      'editor.background':'#F5F8F8',
+      'editor.background':'#FFFFFF',
       'editor.foreground':'#111827',
-      'editor.lineHighlightBackground':'#E5F0F050',
-      'editor.selectionBackground':'#0F766E22',
-      'editor.inactiveSelectionBackground':'#0F766E12',
-      'editorLineNumber.foreground':'#94A3B8',
-      'editorLineNumber.activeForeground':'#0F766E',
-      'editorCursor.foreground':'#0F766E',
+      'editor.lineHighlightBackground':'#F9FAFB',
+      'editor.selectionBackground':'#E5E7EB',
+      'editor.inactiveSelectionBackground':'#E5E7EB',
+      'editorLineNumber.foreground':'#9CA3AF',
+      'editorLineNumber.activeForeground':'#4B5563',
+      'editorCursor.foreground':'#111827',
     }
   });
 }
@@ -148,11 +143,10 @@ function computeDecorations(codeA, codeB) {
 }
 
 /* ── Monaco Editor Pane ──────────────────────────────────────────────── */
-function MonacoEditorPane({ label, value, onChange, accent, error, decorations, isDark, focusClass }) {
+function MonacoEditorPane({ label, value, onChange, error, decorations, isDark }) {
   const editorRef   = useRef(null);
   const monacoRef   = useRef(null);
   const decoIdsRef  = useRef([]);
-  const [focused, setFocused] = useState(false);
 
   function applyDecorations() {
     if (!editorRef.current || !monacoRef.current || !decorations?.length) {
@@ -166,7 +160,7 @@ function MonacoEditorPane({ label, value, onChange, accent, error, decorations, 
         isWholeLine: true,
         className: `line-${d.type}`,
         overviewRuler: {
-          color: d.type === 'exact' ? '#EF4444' : d.type === 'renamed' ? '#3B82F6' : '#F59E0B',
+          color: d.type === 'exact' ? '#DC2626' : d.type === 'renamed' ? '#2563EB' : '#D97706',
           position: 1,
         },
       },
@@ -178,30 +172,26 @@ function MonacoEditorPane({ label, value, onChange, accent, error, decorations, 
 
   return (
     <div
-      className="glass"
       style={{
         display:'flex', flexDirection:'column', flex:1,
         borderRadius:'var(--radius-lg)',
-        border: focused ? `1px solid ${accent}` : '1px solid var(--card-border)',
+        border: '1px solid var(--card-border)',
         overflow:'hidden',
-        transition:'border-color var(--t-mid), box-shadow var(--t-mid)',
-        boxShadow: focused ? `0 0 0 2px ${accent}30, 0 0 18px ${accent}18` : 'none',
+        background: 'var(--card-bg)'
       }}
     >
       {/* Header */}
       <div style={{
         display:'flex', alignItems:'center', gap:'8px',
-        padding:'8px 12px',
+        padding:'10px 16px',
         background:'var(--card-header-bg)',
-        backdropFilter:'var(--glass-blur)',
         borderBottom:'1px solid var(--card-border)',
       }}>
-        <div style={{ width:7, height:7, borderRadius:'50%', background:accent, boxShadow:`0 0 7px ${accent}` }} />
-        <span style={{ fontFamily:'var(--font-sans)', fontSize:'10px', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.1em' }}>
+        <span style={{ fontFamily:'var(--font-sans)', fontSize:'12px', fontWeight:600, color:'var(--text-secondary)' }}>
           {label}
         </span>
         {decorations?.length > 0 && (
-          <span style={{ marginLeft:'auto', fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-muted)' }}>
+          <span style={{ marginLeft:'auto', fontFamily:'var(--font-mono)', fontSize:'11px', color:'var(--text-muted)' }}>
             {decorations.filter(d=>d.type==='exact').length} exact · {decorations.filter(d=>d.type==='renamed').length} renamed · {decorations.filter(d=>d.type==='structural').length} similar
           </span>
         )}
@@ -210,7 +200,7 @@ function MonacoEditorPane({ label, value, onChange, accent, error, decorations, 
       {/* Monaco */}
       <div style={{ flex:1, position:'relative' }}>
         <Editor
-          height="280px"
+          height="320px"
           language="python"
           value={value}
           onChange={v => onChange(v || '')}
@@ -219,72 +209,47 @@ function MonacoEditorPane({ label, value, onChange, accent, error, decorations, 
           onMount={(editor, monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco;
-            editor.onDidFocusEditorText(() => setFocused(true));
-            editor.onDidBlurEditorText(()  => setFocused(false));
             applyDecorations();
           }}
           options={{
-            fontSize:12, lineHeight:20,
+            fontSize:13, lineHeight:22,
             minimap:{ enabled:false },
             scrollBeyondLastLine:false,
             lineNumbers:'on',
             glyphMargin:false, folding:false,
             renderLineHighlight:'all',
-            padding:{ top:8, bottom:8 },
+            padding:{ top:16, bottom:16 },
             overviewRulerLanes:2,
-            scrollbar:{ verticalScrollbarSize:5, horizontalScrollbarSize:5 },
+            scrollbar:{ verticalScrollbarSize:8, horizontalScrollbarSize:8 },
             wordWrap:'off',
             contextmenu:false,
-            fontFamily:"'Fira Code', 'JetBrains Mono', monospace",
-            fontLigatures:true,
-            cursorBlinking:'smooth',
-            cursorSmoothCaretAnimation:'on',
+            fontFamily:"var(--font-mono)",
+            fontLigatures:false,
           }}
         />
       </div>
 
       {error && (
-        <div style={{ padding:'5px 12px', background:'rgba(239,68,68,0.08)', borderTop:'1px solid rgba(239,68,68,0.25)', fontSize:'10px', color:'#F87171', display:'flex', gap:'5px', alignItems:'center' }}>
-          <AlertTriangle size={10} /> {error}
+        <div style={{ padding:'8px 16px', background:'#FEF2F2', borderTop:'1px solid #FEE2E2', fontSize:'12px', color:'#DC2626', display:'flex', gap:'6px', alignItems:'center' }}>
+          <AlertTriangle size={14} /> {error}
         </div>
       )}
     </div>
   );
 }
 
-/* ── StatChip ────────────────────────────────────────────────────────── */
-function StatChip({ label, value, color }) {
+/* ── StatList ────────────────────────────────────────────────────────── */
+function StatList({ stats }) {
   return (
-    <div className="glass" style={{ padding:'9px 16px', borderRadius:'var(--radius-md)', textAlign:'center' }}>
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:'15px', fontWeight:800, color: color || 'var(--accent)', letterSpacing:'-0.5px' }}>{value}</div>
-      <div style={{ fontFamily:'var(--font-sans)', fontSize:'9px', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.1em', marginTop:'2px' }}>{label}</div>
+    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginTop: '16px' }}>
+      {stats.map(({ label, value }) => (
+        <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ fontFamily:'var(--font-sans)', fontSize:'12px', color:'var(--text-muted)' }}>{label}</div>
+          <div style={{ fontFamily:'var(--font-mono)', fontSize:'14px', fontWeight:500, color:'var(--text-primary)' }}>{value}</div>
+        </div>
+      ))}
     </div>
   );
-}
-
-/* ── Sequential typewriter ───────────────────────────────────────────── */
-const LINE1 = 'Code Plagiarism Detection';
-const LINE2 = 'Analyze structural and semantic similarity between code snippets';
-
-function useTypewriter(text, speed, active) {
-  const [displayed, setDisplayed] = useState('');
-  const [done, setDone]           = useState(false);
-  const idxRef = useRef(0);
-
-  useEffect(() => {
-    if (!active) return;
-    idxRef.current = 0;
-    setDisplayed('');
-    setDone(false);
-    const id = setInterval(() => {
-      idxRef.current += 1;
-      setDisplayed(text.slice(0, idxRef.current));
-      if (idxRef.current >= text.length) { clearInterval(id); setDone(true); }
-    }, speed);
-    return () => clearInterval(id);
-  }, [text, speed, active]);
-
-  return { displayed, done };
 }
 
 /* ── Main Dashboard ──────────────────────────────────────────────────── */
@@ -299,14 +264,6 @@ export default function DashboardView() {
   const [activeTab, setActiveTab] = useState('verdict');
   const [decA, setDecA] = useState([]);
   const [decB, setDecB] = useState([]);
-
-  // Sequential typewriter
-  const { displayed: heading, done: headingDone } = useTypewriter(LINE1, 52, true);
-  const [sub2Active, setSub2Active] = useState(false);
-  useEffect(() => {
-    if (headingDone) { const t = setTimeout(() => setSub2Active(true), 380); return () => clearTimeout(t); }
-  }, [headingDone]);
-  const { displayed: subtitle, done: subtitleDone } = useTypewriter(LINE2, 30, sub2Active);
 
   const handleAnalyze = useCallback(async () => {
     setLoading(true); setError(null);
@@ -325,222 +282,179 @@ export default function DashboardView() {
   const tokensBStr = result?.tokens_b || [];
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:'24px' }}>
 
-      {/* ── Heading: two-line sequential typewriter ──────────────────── */}
-      <div style={{ marginBottom:'0.75rem' }}>
+      {/* ── Heading ──────────────────── */}
+      <div>
         <h1 style={{
           fontFamily:'var(--font-display)',
-          fontSize:'clamp(2rem, 4vw, 3.1rem)',
-          fontWeight:700, letterSpacing:'-1px', lineHeight:1.1,
-          color:'var(--text-primary)', whiteSpace:'nowrap',
-          display:'flex', alignItems:'baseline', gap:'2px',
-          transition:'color var(--t-slow)',
+          fontSize:'2rem',
+          fontWeight:600, letterSpacing:'-0.02em',
+          color:'var(--text-primary)',
+          margin: 0
         }}>
-          {heading}
-          {!headingDone && <span className="cursor-blink" style={{ fontWeight:300, color:'var(--accent)', marginLeft:'2px' }}>_</span>}
+          Code Plagiarism Detection
         </h1>
-
-        <AnimatePresence>
-          {sub2Active && (
-            <motion.p
-              initial={{ opacity:0 }}
-              animate={{ opacity:1 }}
-              style={{
-                fontFamily:'var(--font-mono)',
-                fontSize:'clamp(0.78rem, 1.5vw, 0.95rem)',
-                color:'var(--text-muted)',
-                marginTop:'6px',
-                display:'flex', alignItems:'center', gap:'2px',
-                transition:'color var(--t-slow)',
-              }}
-            >
-              {subtitle}
-              {!subtitleDone && <span className="cursor-blink" style={{ color:'var(--accent)' }}>_</span>}
-              {subtitleDone && <span className="cursor-blink" style={{ color:'var(--accent)' }}>_</span>}
-            </motion.p>
-          )}
-        </AnimatePresence>
+        <p style={{
+          fontFamily:'var(--font-sans)',
+          fontSize:'1rem',
+          color:'var(--text-secondary)',
+          marginTop:'8px',
+          margin: 0
+        }}>
+          Analyze structural and semantic similarity between code snippets
+        </p>
       </div>
 
       {/* ── Two Monaco editors ───────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }}
-        transition={{ duration:0.45, delay:0.1 }}
-        style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px', position:'relative' }}
-      >
-        {/* Scan animation overlay */}
-        {loading && (
-          <div style={{ position:'absolute', inset:0, zIndex:5, pointerEvents:'none', borderRadius:'var(--radius-lg)', overflow:'hidden' }}>
-            <div className="scan-line" />
-          </div>
-        )}
-
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'24px', position:'relative' }}>
         <MonacoEditorPane
-          label="Code A — Original / Reference"
+          label="Code A — Reference"
           value={codeA} onChange={setCodeA}
-          accent="#8B5CF6" error={result?.error_a}
+          error={result?.error_a}
           decorations={decA} isDark={isDark}
         />
         <MonacoEditorPane
-          label="Code B — Suspect Submission"
+          label="Code B — Submission"
           value={codeB} onChange={setCodeB}
-          accent="var(--accent)" error={result?.error_b}
+          error={result?.error_b}
           decorations={decB} isDark={isDark}
         />
-      </motion.div>
+      </div>
 
       {/* Comparison legend */}
       {decA.length > 0 && (
-        <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
-          style={{ display:'flex', gap:'14px', flexWrap:'wrap', fontSize:'11px', fontFamily:'var(--font-sans)' }}>
+        <div style={{ display:'flex', gap:'16px', flexWrap:'wrap', fontSize:'12px', fontFamily:'var(--font-sans)' }}>
           {[
-            { color:'#EF4444', bg:'rgba(239,68,68,0.12)', label:'Exact Match — identical line' },
-            { color:'#3B82F6', bg:'rgba(59,130,246,0.12)', label:'Renamed — same structure, different identifiers' },
-            { color:'#F59E0B', bg:'rgba(245,158,11,0.12)', label:'Structurally Similar — shared pattern' },
-          ].map(({ color, bg, label }) => (
-            <span key={label} style={{ display:'flex', alignItems:'center', gap:'5px', color:'var(--text-secondary)' }}>
-              <span style={{ width:12, height:12, borderRadius:'2px', background:bg, border:`1.5px solid ${color}`, flexShrink:0 }} />
+            { color:'#DC2626', label:'Exact Match' },
+            { color:'#2563EB', label:'Renamed' },
+            { color:'#D97706', label:'Structurally Similar' },
+          ].map(({ color, label }) => (
+            <span key={label} style={{ display:'flex', alignItems:'center', gap:'6px', color:'var(--text-secondary)' }}>
+              <span style={{ width:10, height:10, borderRadius:'2px', background:color, flexShrink:0 }} />
               {label}
             </span>
           ))}
-        </motion.div>
+        </div>
       )}
 
       {/* ── Run Analysis button ──────────────────────────────────────── */}
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
-        <motion.button
-          whileTap={{ scale: loading ? 1 : 0.97 }}
+      <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
+        <button
           onClick={handleAnalyze}
           disabled={loading}
-          className="btn-glow"
           style={{
             display:'flex', alignItems:'center', gap:'8px',
-            padding:'11px 40px', borderRadius:'var(--radius-md)',
+            padding:'10px 20px', borderRadius:'var(--radius-md)',
             border:'1px solid var(--accent)',
             cursor: loading ? 'not-allowed' : 'pointer',
             background: loading ? 'var(--card-header-bg)' : 'var(--accent)',
-            color: loading ? 'var(--text-muted)' : '#000',
-            fontFamily:'var(--font-display)',
-            fontSize:'13px', fontWeight:700, letterSpacing:'0.02em',
-            transition:'all var(--t-mid)',
+            color: loading ? 'var(--text-muted)' : 'var(--app-bg)',
+            fontFamily:'var(--font-sans)',
+            fontSize:'14px', fontWeight:500,
+            transition:'all var(--t-fast)',
           }}
         >
           {loading
-            ? <><Loader2 size={14} className="animate-spin" /> Analyzing…</>
-            : <><Play size={13} fill="currentColor" /> Run Analysis</>}
-        </motion.button>
+            ? <><Loader2 size={16} className="animate-spin" /> Analyzing…</>
+            : <><Play size={16} fill="currentColor" /> Run Analysis</>}
+        </button>
 
-        <AnimatePresence>
-          {error && (
-            <motion.div initial={{ opacity:0, y:-6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
-              style={{ display:'flex', gap:'8px', padding:'10px 16px', borderRadius:'var(--radius-md)',
-                border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.07)',
-                fontFamily:'var(--font-sans)', fontSize:'12px', color:'#F87171', maxWidth:'520px' }}>
-              <AlertTriangle size={13} style={{ flexShrink:0, marginTop:1 }} /> {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && (
+          <div style={{ display:'flex', gap:'8px', padding:'10px 16px', borderRadius:'var(--radius-md)',
+            border:'1px solid #FEE2E2', background:'#FEF2F2',
+            fontFamily:'var(--font-sans)', fontSize:'13px', color:'#DC2626' }}>
+            <AlertTriangle size={16} style={{ flexShrink:0 }} /> {error}
+          </div>
+        )}
       </div>
 
       {/* ── Analytics row (after result) ────────────────────────────── */}
-      <AnimatePresence>
-        {result && (
-          <motion.div
-            initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
-            exit={{ opacity:0 }} transition={{ duration:0.4 }}
-            style={{ display:'flex', flexDirection:'column', gap:'14px' }}
-          >
-            {/* ── Glassmorphic verdict card — full verdict color ── */}
-            <motion.div
-              initial={{ scale:0.97 }} animate={{ scale:1 }}
-              style={{
-                display:'flex', alignItems:'center', gap:'20px', padding:'22px 26px',
-                borderRadius:'var(--radius-lg)',
-                background:`linear-gradient(135deg, ${vc.color}20 0%, ${vc.color}08 60%, ${vc.glow} 100%)`,
-                backdropFilter:'blur(24px) saturate(180%)',
-                WebkitBackdropFilter:'blur(24px) saturate(180%)',
-                border:`1px solid ${vc.border}`,
-                boxShadow:`0 8px 40px ${vc.color}22, inset 0 1px 0 ${vc.color}18`,
-                transition:'all var(--t-slow)',
-              }}
-            >
-              <ScoreRing score={result.similarity_score} verdict={result.verdict} />
+      {result && (
+        <div style={{ display:'flex', flexDirection:'column', gap:'24px' }}>
+          
+          {/* ── Verdict card ── */}
+          <div style={{
+              display:'flex', alignItems:'flex-start', gap:'24px', padding:'24px',
+              borderRadius:'var(--radius-lg)',
+              background:'var(--card-bg)',
+              border:'1px solid var(--card-border)',
+          }}>
+            <ScoreRing score={result.similarity_score} verdict={result.verdict} />
 
-              <div style={{ flex:1 }}>
-                <div style={{ fontFamily:'var(--font-display)', fontSize:'24px', fontWeight:800, color:vc.color, letterSpacing:'-0.5px', marginBottom:'3px' }}>
+            <div style={{ flex:1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ fontFamily:'var(--font-display)', fontSize:'20px', fontWeight:600, color:vc.color }}>
                   {result.verdict}
                 </div>
-                <div style={{ fontFamily:'var(--font-sans)', fontSize:'13px', color:'var(--text-secondary)', marginBottom:'14px' }}>
-                  {vc.label} — {result.similarity_score.toFixed(1)}% structural similarity
-                </div>
-                <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
-                  <StatChip label="LCS Bigrams" value={result.lcs_length}               color={vc.color} />
-                  <StatChip label="DP Table"    value={result.dp_table_size}            color={vc.color} />
-                  <StatChip label="N-gram"       value={`n = ${result.ngram_size}`}      color={vc.color} />
-                  <StatChip label="Time"         value={`${result.time_ms?.toFixed(1)}ms`} color={vc.color} />
+                <div style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {result.similarity_score.toFixed(1)}% similarity
                 </div>
               </div>
-            </motion.div>
-
-            {/* ── Analytics tab panel ── */}
-            <div
-              className="glass"
-              style={{
-                borderRadius:'var(--radius-lg)',
-                overflow:'hidden',
-                background:`linear-gradient(135deg, ${vc.color}18 0%, ${vc.color}08 55%, ${vc.glow} 100%)`,
-                border:`1px solid ${vc.border}`,
-                boxShadow:`0 18px 46px ${vc.color}25`,
-              }}
-            >
-              {/* Tab bar */}
-              <div style={{ display:'flex', borderBottom:'1px solid var(--card-border)', background:'var(--card-header-bg)', backdropFilter:'var(--glass-blur)' }}>
-                {TABS.map(({ key, label, icon:Icon }) => {
-                  const active = activeTab === key;
-                  return (
-                    <button key={key} onClick={() => setActiveTab(key)} style={{
-                      flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:'6px',
-                      padding:'11px 8px', border:'none',
-                      borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
-                      background:'transparent', cursor:'pointer',
-                      fontFamily:'var(--font-sans)', fontSize:'11px', fontWeight:600,
-                      color: active ? 'var(--accent)' : 'var(--text-muted)',
-                      transition:'all var(--t-fast)', whiteSpace:'nowrap',
-                    }}
-                    onMouseEnter={e => { if (!active) e.currentTarget.style.color='var(--text-secondary)'; }}
-                    onMouseLeave={e => { if (!active) e.currentTarget.style.color='var(--text-muted)'; }}
-                    >
-                      <Icon size={11}/>{label}
-                    </button>
-                  );
-                })}
+              <div style={{ fontFamily:'var(--font-sans)', fontSize:'14px', color:'var(--text-secondary)', marginTop: '4px' }}>
+                {vc.label}
               </div>
-
-              <div style={{ padding:'20px' }}>
-                <AnimatePresence mode="wait">
-                  {activeTab==='verdict'    && <motion.div key="v" initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-8}} transition={{duration:0.2}}><SemanticVerdictPanel result={result}/></motion.div>}
-                  {activeTab==='diff'       && <motion.div key="d" initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-8}} transition={{duration:0.2}}><StructuralDiff tokensA={tokensAStr} tokensB={tokensBStr} commonTokens={result.common_tokens||[]} labelA="Code A" labelB="Code B"/></motion.div>}
-                  {activeTab==='hash'       && <motion.div key="h" initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-8}} transition={{duration:0.2}}><CollisionMap tokensA={tokensAStr} tokensB={tokensBStr} windowSize={3}/></motion.div>}
-                  {activeTab==='complexity' && <motion.div key="c" initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-8}} transition={{duration:0.2}}><ComplexityDashboard result={result}/></motion.div>}
-                </AnimatePresence>
-              </div>
+              
+              <StatList stats={[
+                { label: 'LCS Bigrams', value: result.lcs_length },
+                { label: 'DP Table Size', value: result.dp_table_size },
+                { label: 'N-gram Size', value: result.ngram_size },
+                { label: 'Time Elapsed', value: `${result.time_ms?.toFixed(1)}ms` }
+              ]} />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+          {/* ── Analytics tab panel ── */}
+          <div style={{
+            borderRadius:'var(--radius-lg)',
+            overflow:'hidden',
+            background:'var(--card-bg)',
+            border:'1px solid var(--card-border)',
+          }}>
+            {/* Tab bar */}
+            <div style={{ display:'flex', borderBottom:'1px solid var(--card-border)', background:'var(--card-header-bg)' }}>
+              {TABS.map(({ key, label, icon:Icon }) => {
+                const active = activeTab === key;
+                return (
+                  <button key={key} onClick={() => setActiveTab(key)} style={{
+                    flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px',
+                    padding:'12px 16px', border:'none',
+                    borderBottom: active ? '2px solid var(--text-primary)' : '2px solid transparent',
+                    background:'transparent', cursor:'pointer',
+                    fontFamily:'var(--font-sans)', fontSize:'13px', fontWeight:500,
+                    color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+                    transition:'all var(--t-fast)', whiteSpace:'nowrap',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color='var(--text-secondary)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color='var(--text-muted)'; }}
+                  >
+                    <Icon size={14}/>{label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ padding:'24px' }}>
+                {activeTab==='verdict'    && <SemanticVerdictPanel result={result}/>}
+                {activeTab==='diff'       && <StructuralDiff tokensA={tokensAStr} tokensB={tokensBStr} commonTokens={result.common_tokens||[]} labelA="Code A" labelB="Code B"/>}
+                {activeTab==='hash'       && <CollisionMap tokensA={tokensAStr} tokensB={tokensBStr} windowSize={3}/>}
+                {activeTab==='complexity' && <ComplexityDashboard result={result}/>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Placeholder */}
       {!result && !loading && (
-        <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
-          className="glass" style={{
-            display:'flex', alignItems:'center', justifyContent:'center', gap:'10px',
-            padding:'32px', borderRadius:'var(--radius-lg)',
-            borderStyle:'dashed', fontFamily:'var(--font-sans)', fontSize:'12px', color:'var(--text-muted)',
+        <div style={{
+            display:'flex', alignItems:'center', justifyContent:'center', gap:'12px',
+            padding:'48px', borderRadius:'var(--radius-lg)',
+            border:'1px dashed var(--card-border)', fontFamily:'var(--font-sans)', fontSize:'14px', color:'var(--text-muted)',
+            background: 'var(--card-bg)'
           }}>
-          <BarChart3 size={18} strokeWidth={1} />
+          <BarChart3 size={20} strokeWidth={1.5} />
           Run analysis to see algorithmic insights
-        </motion.div>
+        </div>
       )}
     </div>
   );
