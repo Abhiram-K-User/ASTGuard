@@ -1,8 +1,54 @@
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Header() {
+export default function Header({ activeTab, onTabChange }) {
      const { toggle, isDark } = useTheme();
+
+     const renderTab = (key, label) => {
+          const isActive = activeTab === key;
+          return (
+               <button
+                    onClick={() => onTabChange(key)}
+                    style={{
+                         background: 'transparent',
+                         border: 'none',
+                         fontSize: '0.95rem',
+                         fontWeight: isActive ? 600 : 400,
+                         color: isActive ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                         cursor: 'pointer',
+                         padding: '8px 16px',
+                         borderRadius: 'var(--radius-md)',
+                         transition: 'all var(--t-fast)',
+                         position: 'relative',
+                    }}
+                    onMouseEnter={e => {
+                         if (!isActive) {
+                              e.currentTarget.style.color = 'var(--text-primary)';
+                              e.currentTarget.style.background = 'var(--card-header-bg)';
+                         }
+                    }}
+                    onMouseLeave={e => {
+                         if (!isActive) {
+                              e.currentTarget.style.color = 'var(--text-secondary)';
+                              e.currentTarget.style.background = 'transparent';
+                         }
+                    }}
+               >
+                    {label}
+                    {isActive && (
+                         <div style={{
+                              position: 'absolute',
+                              bottom: -4,
+                              left: '10%',
+                              width: '80%',
+                              height: '2px',
+                              background: 'var(--accent-blue)',
+                              borderRadius: '2px'
+                         }} />
+                    )}
+               </button>
+          );
+     };
 
      return (
           <header style={{
@@ -13,7 +59,7 @@ export default function Header() {
                borderBottom: '1px solid var(--card-border)',
                marginBottom: '32px',
           }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                     <div style={{
                          fontFamily: 'var(--font-display)',
                          fontSize: '1.25rem',
@@ -25,7 +71,12 @@ export default function Header() {
                     </div>
                </div>
 
-               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'center', flex: 1 }}>
+                    {renderTab('analyze', 'Analyze')}
+                    {renderTab('visualize', 'Visualize AST')}
+               </div>
+
+               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end', flex: 1 }}>
                     <button
                          type="button"
                          onClick={toggle}

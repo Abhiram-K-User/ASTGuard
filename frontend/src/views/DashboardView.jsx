@@ -5,7 +5,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
-import { Play, Loader2, AlertTriangle, BarChart3, GitMerge, Hash, TrendingUp, BarChart2 } from 'lucide-react';
+import { Play, Loader2, AlertTriangle, BarChart3, GitMerge, Hash, TrendingUp, BarChart2, GitBranch, Maximize2, Minimize2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 import StructuralDiff       from '../components/ast/StructuralDiff';
@@ -13,6 +13,7 @@ import CollisionMap         from '../components/ast/CollisionMap';
 import SemanticVerdictPanel from '../components/SemanticVerdictPanel';
 import ComplexityDashboard  from '../components/ComplexityDashboard';
 import ScoreRing            from '../components/ScoreRing';
+import ASTVisualizer        from '../components/ast/ASTVisualizer';
 import { compareCode }      from '../services/api';
 import { PLACEHOLDER_A, PLACEHOLDER_B } from '../constants';
 
@@ -253,7 +254,7 @@ function StatList({ stats }) {
 }
 
 /* ── Main Dashboard ──────────────────────────────────────────────────── */
-export default function DashboardView() {
+export default function DashboardView({ globalTab = 'analyze' }) {
   const { isDark } = useTheme();
 
   const [codeA, setCodeA] = useState(PLACEHOLDER_A);
@@ -264,6 +265,7 @@ export default function DashboardView() {
   const [activeTab, setActiveTab] = useState('verdict');
   const [decA, setDecA] = useState([]);
   const [decB, setDecB] = useState([]);
+  const [visualizeTarget, setVisualizeTarget] = useState('A');
 
   const handleAnalyze = useCallback(async () => {
     setLoading(true); setError(null);
@@ -280,6 +282,68 @@ export default function DashboardView() {
   const vc = result ? (VC[result.verdict] || VC.Safe) : null;
   const tokensAStr = result?.tokens_a || [];
   const tokensBStr = result?.tokens_b || [];
+
+  if (globalTab === 'visualize') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '16px', flex: 1, paddingBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+            AST Visualization
+          </h2>
+          <div style={{ display: 'flex', background: 'var(--card-bg)', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--card-border)' }}>
+            <button
+              onClick={() => setVisualizeTarget('A')}
+              style={{
+                padding: '6px 16px',
+                border: 'none',
+                background: visualizeTarget === 'A' ? 'var(--accent)' : 'transparent',
+                color: visualizeTarget === 'A' ? 'var(--app-bg)' : 'var(--text-secondary)',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '13px',
+                fontWeight: visualizeTarget === 'A' ? 600 : 500,
+                transition: 'all var(--t-fast)'
+              }}
+            >
+              Code A
+            </button>
+            <button
+              onClick={() => setVisualizeTarget('B')}
+              style={{
+                padding: '6px 16px',
+                border: 'none',
+                background: visualizeTarget === 'B' ? 'var(--accent)' : 'transparent',
+                color: visualizeTarget === 'B' ? 'var(--app-bg)' : 'var(--text-secondary)',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '13px',
+                fontWeight: visualizeTarget === 'B' ? 600 : 500,
+                transition: 'all var(--t-fast)'
+              }}
+            >
+              Code B
+            </button>
+          </div>
+        </div>
+
+        {result ? (
+          <div style={{ display: 'flex', flex: 1, minHeight: 'calc(100vh - 180px)', border: '1px solid var(--card-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: 'var(--bg-elevated)' }}>
+            <ASTVisualizer
+              tokens={visualizeTarget === 'A' ? (result.tokens_a_detail || []) : (result.tokens_b_detail || [])}
+              label={`Code ${visualizeTarget}`}
+            />
+          </div>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 180px)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--card-border)', fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--text-muted)', background: 'var(--card-bg)' }}>
+            <GitBranch size={20} strokeWidth={1.5} style={{ marginRight: '12px' }} />
+            Run analysis in the Analyze tab to visualize AST
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'24px' }}>
