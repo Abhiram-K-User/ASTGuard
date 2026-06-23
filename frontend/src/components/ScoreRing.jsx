@@ -8,9 +8,9 @@ const R    = 68;
 const CIRC = 2 * Math.PI * R;
 
 function verdictColor(score) {
-  if (score >= 78) return '#ef4444';
-  if (score >= 30) return '#f59e0b';
-  return '#22c55e';
+  if (score >= 78) return '#DC2626'; // Red-600
+  if (score >= 30) return '#D97706'; // Amber-600
+  return '#059669'; // Emerald-600
 }
 
 export default function ScoreRing({ score = 0 }) {
@@ -19,32 +19,19 @@ export default function ScoreRing({ score = 0 }) {
 
   return (
     <div style={{ position: 'relative', width: 148, height: 148, flexShrink: 0 }}>
-      {/* Glow pulse */}
-      <motion.div
-        animate={{ scale: [1, 1.07, 1], opacity: [0.25, 0.5, 0.25] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'absolute', inset: -5,
-          borderRadius: '50%',
-          border: `2px solid ${color}`,
-          opacity: 0.25,
-        }}
-      />
-
       <svg width="148" height="148" style={{ transform: 'rotate(-90deg)' }}>
         <circle cx="74" cy="74" r={R}
           fill="none"
           stroke="var(--card-border)"
-          strokeWidth="9"
+          strokeWidth="8"
         />
         <motion.circle
           cx="74" cy="74" r={R}
-          fill="none" stroke={color} strokeWidth="9" strokeLinecap="round"
+          fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"
           strokeDasharray={CIRC}
           initial={{ strokeDashoffset: CIRC }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.3, ease: [0.34, 1.56, 0.64, 1] }}
-          style={{ filter: `drop-shadow(0 0 8px ${color}88)` }}
+          transition={{ duration: 1.0, ease: 'easeOut' }}
         />
       </svg>
 
@@ -55,23 +42,22 @@ export default function ScoreRing({ score = 0 }) {
         alignItems: 'center', justifyContent: 'center', gap: 2,
       }}>
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.45 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '1.9rem', fontWeight: 900,
-            color, letterSpacing: '-2px', lineHeight: 1,
+            fontSize: '1.75rem', fontWeight: 600,
+            color, letterSpacing: '-1px', lineHeight: 1,
           }}
         >
-          {Math.round(score)}<span style={{ fontSize: '0.9rem', fontWeight: 700 }}>%</span>
+          {Math.round(score)}<span style={{ fontSize: '1rem', fontWeight: 500 }}>%</span>
         </motion.div>
         <div style={{
           fontFamily: 'var(--font-sans)',
-          fontSize: '0.58rem', fontWeight: 700,
-          letterSpacing: '0.14em', textTransform: 'uppercase',
+          fontSize: '0.65rem', fontWeight: 600,
           color: 'var(--text-muted)',
-          marginTop: '2px',
+          marginTop: '4px',
           transition: 'color var(--t-slow)',
         }}>
           Similarity
