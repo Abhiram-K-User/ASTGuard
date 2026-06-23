@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart2, Cpu, RefreshCw } from 'lucide-react';
-import { streamSemanticVerdict } from '../lib/ai/semanticVerdict';
+import { streamSemanticVerdict } from '../lib/verdict/semanticVerdict';
 import { computeTED } from '../lib/daa/treeEditDistance';
 import { rollingHashes, buildCollisionMap } from '../lib/daa/rabinKarpHash';
 
@@ -28,11 +28,13 @@ export default function SemanticVerdictPanel({ result }) {
     ? computeTED(result.tokens_a || [], result.tokens_b || [])
     : { distance: 0 };
 
-  const collisionCount = result ? (() => {
+  const collisionStats = result ? (() => {
     const hA = rollingHashes(result.tokens_a || [], 3);
     const hB = rollingHashes(result.tokens_b || [], 3);
-    return buildCollisionMap(hA, hB).length;
-  })() : 0;
+    const collisions = buildCollisionMap(hA, hB);
+    const matchCount = collisions.reduce((sum, c) => sum + c.size, 0);
+    return { collisions, matchCount };
+  })() : { collisions: [], matchCount: 0 };
 
   function startStream() {
     if (!result) return;
@@ -47,7 +49,7 @@ export default function SemanticVerdictPanel({ result }) {
         lcsLength:   result.lcs_length,
         dpTableSize: result.dp_table_size,
         tedDistance,
-        collisions:  collisionCount,
+        collisions:  collisionStats.matchCount,
         commonTokens: result.common_tokens || [],
       },
       (chunk) => {
@@ -64,13 +66,13 @@ export default function SemanticVerdictPanel({ result }) {
   useEffect(() => {
     if (result) startStream();
     return () => cleanupRef.current?.();
-  }, [result?.verdict, result?.similarity_score]);
+  }, [result]);
 
   if (!result) return null;
 
   const metrics = [
     { label: 'TED Distance',   value: `${tedDistance} ops` },
-    { label: 'Hash Collisions', value: collisionCount },
+    { label: 'Hash Matches', value: collisionStats.matchCount },
     { label: 'LCS Bigrams',    value: result.lcs_length },
     { label: 'DP Table',       value: result.dp_table_size },
   ];

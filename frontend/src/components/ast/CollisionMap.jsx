@@ -35,11 +35,19 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function CollisionMap({ tokensA = [], tokensB = [], windowSize = 3 }) {
-  const collisions = useMemo(() => {
-    if (tokensA.length < windowSize || tokensB.length < windowSize) return [];
+  const { collisions, totalMatches, totalGroups } = useMemo(() => {
+    if (tokensA.length < windowSize || tokensB.length < windowSize) {
+      return { collisions: [], totalMatches: 0, totalGroups: 0 };
+    }
     const hA = rollingHashes(tokensA, windowSize);
     const hB = rollingHashes(tokensB, windowSize);
-    return buildCollisionMap(hA, hB).slice(0, 20);
+    const allCollisions = buildCollisionMap(hA, hB);
+    const matchCount = allCollisions.reduce((sum, c) => sum + c.size, 0);
+    return {
+      collisions: allCollisions.slice(0, 20),
+      totalMatches: matchCount,
+      totalGroups: allCollisions.length,
+    };
   }, [tokensA, tokensB, windowSize]);
 
   const chartData = collisions.map(c => ({
@@ -81,8 +89,15 @@ export default function CollisionMap({ tokensA = [], tokensB = [], windowSize = 
         <span style={{
           marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#8b5cf6',
         }}>
-          {collisions.length} collision{collisions.length !== 1 ? 's' : ''}
+          {totalMatches} match{totalMatches !== 1 ? 'es' : ''}
         </span>
+        {totalGroups > collisions.length && (
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-muted)',
+          }}>
+            Top 20 hashes shown
+          </span>
+        )}
       </div>
 
       <ResponsiveContainer width="100%" height={200}>
