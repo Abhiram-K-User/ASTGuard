@@ -33,6 +33,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from tree_sitter_languages import get_parser
 
 # ---------------------------------------------------------------------------
 # Logging Configuration
@@ -71,9 +72,10 @@ app.add_middleware(
 # ===========================================================================
 
 class CompareRequest(BaseModel):
-    """Request payload carrying two Python code snippets to compare."""
+    """Request payload carrying two code snippets to compare."""
     code_a: str
     code_b: str
+    language: str = "python"
     label_a: str = "Student A"
     label_b: str = "Student B"
 
@@ -155,13 +157,60 @@ class ASTNormaliser(ast.NodeVisitor):
         self.tokens: list[str] = []
         self.token_details: list[TokenDetail] = []
 
+    def _get_custom_type(self, node: ast.AST) -> str:
+        node_type = type(node).__name__
+        if isinstance(node, ast.Compare):
+            op_symbols = {
+                ast.Lt: "<", ast.Gt: ">", ast.LtE: "<=", ast.GtE: ">=",
+                ast.Eq: "==", ast.NotEq: "!=", ast.Is: "is", ast.IsNot: "is not",
+                ast.In: "in", ast.NotIn: "not in"
+            }
+            op_sym = "?"
+            if node.ops:
+                op_sym = op_symbols.get(type(node.ops[0]), "?")
+            return f"Compare({op_sym})"
+        elif isinstance(node, ast.BinOp):
+            op_map = {
+                ast.Add: "+", ast.Sub: "-", ast.Mult: "*", ast.Div: "/",
+                ast.Mod: "%", ast.FloorDiv: "//", ast.Pow: "**",
+                ast.LShift: "<<", ast.RShift: ">>",
+                ast.BitOr: "|", ast.BitAnd: "&", ast.BitXor: "^",
+                ast.MatMult: "@"
+            }
+            op_sym = op_map.get(type(node.op), "?")
+            return f"BinOp({op_sym})"
+        elif isinstance(node, ast.UnaryOp):
+            op_map = {
+                ast.UAdd: "+", ast.USub: "-", ast.Not: "not", ast.Invert: "~"
+            }
+            op_sym = op_map.get(type(node.op), "?")
+            return f"UnaryOp({op_sym})"
+        elif isinstance(node, ast.Subscript):
+            is_adjacent = False
+            slice_node = node.slice
+            def has_add_sub(n) -> bool:
+                if isinstance(n, ast.BinOp) and type(n.op) in [ast.Add, ast.Sub]:
+                    return True
+                for child in ast.iter_child_nodes(n):
+                    if has_add_sub(child):
+                        return True
+                return False
+            if slice_node and has_add_sub(slice_node):
+                is_adjacent = True
+            return f"Subscript({'Adjacent' if is_adjacent else 'Indexed'})"
+        elif isinstance(node, ast.BoolOp):
+            op_sym = "And" if isinstance(node.op, ast.And) else "Or"
+            return f"BoolOp({op_sym})"
+        return node_type
+
     def _record(self, node: ast.AST) -> None:
         """Append the node type to the token stream if it is structural."""
         node_type = type(node).__name__
         if node_type in STRUCTURAL_NODES:
+            custom_type = self._get_custom_type(node)
             lineno: int | None = getattr(node, "lineno", None)
-            self.tokens.append(node_type)
-            self.token_details.append(TokenDetail(token=node_type, lineno=lineno))
+            self.tokens.append(custom_type)
+            self.token_details.append(TokenDetail(token=custom_type, lineno=lineno))
 
     def generic_visit(self, node: ast.AST) -> None:
         """Override to record before descending (pre-order traversal)."""
@@ -205,6 +254,129 @@ def parse_and_normalise(source: str) -> tuple[list[str], list[TokenDetail], str 
     normaliser.visit(tree)
     logger.info("Parsed %d structural tokens.", len(normaliser.tokens))
     return normaliser.tokens, normaliser.token_details, None
+
+
+# ── Tree-Sitter Unified Mapping for Multi-Language Support ──────────────────
+TS_TO_AST_MAP: dict[str, str] = {
+    "function_definition": "FunctionDef",
+    "method_declaration": "FunctionDef",
+    "class_declaration": "ClassDef",
+    "struct_specifier": "ClassDef",
+    "if_statement": "If",
+    "for_statement": "For",
+    "while_statement": "While",
+    "do_statement": "While",
+    "try_statement": "Try",
+    "catch_clause": "ExceptHandler",
+    "return_statement": "Return",
+    "throw_statement": "Raise",
+    "break_statement": "Break",
+    "continue_statement": "Continue",
+    "binary_expression": "BinOp",
+    "unary_expression": "UnaryOp",
+    "update_expression": "AugAssign",
+    "assignment_expression": "Assign",
+    "call_expression": "Call",
+    "method_invocation": "Call",
+    "subscript_expression": "Subscript",
+    "array_access": "Subscript",
+    "field_expression": "Attribute",
+    "member_expression": "Attribute",
+    "pointer_expression": "Starred",
+}
+
+
+def ts_has_add_sub(node) -> bool:
+    """Helper to check if a tree-sitter index node contains dynamic offsets (+ or -)."""
+    if node.type == "binary_expression":
+        for child in node.children:
+            if child.type in ["+", "-"]:
+                return True
+    for child in node.children:
+        if ts_has_add_sub(child):
+            return True
+    return False
+
+
+def parse_and_normalise_tree_sitter(
+    source: str, language: str
+) -> tuple[list[str], list[TokenDetail], str | None]:
+    """
+    Parse C/C++/Java source code using tree-sitter, mapping structural nodes
+    to a unified token list.
+    """
+    try:
+        parser = get_parser(language)
+    except Exception as exc:
+        msg = f"Failed to load parser for '{language}': {exc}"
+        logger.error(msg)
+        return [], [], msg
+
+    try:
+        tree = parser.parse(bytes(source, "utf8"))
+    except Exception as exc:
+        msg = f"Parse error: {exc}"
+        logger.error(msg)
+        return [], [], msg
+
+    root_node = tree.root_node
+
+    if root_node.has_error:
+        # Find first ERROR node and report its line
+        error_lines: list[int] = []
+
+        def walk_errors(n) -> None:
+            if n.type == "ERROR":
+                error_lines.append(n.start_point[0] + 1)
+            for child in n.children:
+                walk_errors(child)
+
+        walk_errors(root_node)
+        line_num = error_lines[0] if error_lines else 1
+        msg = f"SyntaxError at line {line_num}: Syntax errors detected by parser."
+        logger.warning("Parse failure: %s", msg)
+        return [], [], msg
+
+    tokens: list[str] = []
+    token_details: list[TokenDetail] = []
+
+    def traverse(node) -> None:
+        if node.type in TS_TO_AST_MAP:
+            mapped_type = TS_TO_AST_MAP[node.type]
+            if node.type == "binary_expression":
+                op_node = None
+                for child in node.children:
+                    if not child.is_named:
+                        op_node = child
+                        break
+                op_sym = op_node.type if op_node else "?"
+                if op_sym in ["<", "<=", ">", ">=", "==", "!="]:
+                    mapped_type = f"Compare({op_sym})"
+                elif op_sym in ["&&", "||"]:
+                    mapped_type = f"BoolOp({'And' if op_sym == '&&' else 'Or'})"
+                else:
+                    mapped_type = f"BinOp({op_sym})"
+            elif node.type == "unary_expression":
+                op_node = None
+                for child in node.children:
+                    if not child.is_named:
+                        op_node = child
+                        break
+                op_sym = op_node.type if op_node else "?"
+                mapped_type = f"UnaryOp({op_sym})"
+            elif node.type in ["subscript_expression", "array_access"]:
+                is_adjacent = ts_has_add_sub(node)
+                mapped_type = f"Subscript({'Adjacent' if is_adjacent else 'Indexed'})"
+            
+            lineno = node.start_point[0] + 1
+            tokens.append(mapped_type)
+            token_details.append(TokenDetail(token=mapped_type, lineno=lineno))
+        for child in node.children:
+            traverse(child)
+
+    traverse(root_node)
+    logger.info("Parsed %d structural tree-sitter tokens.", len(tokens))
+    return tokens, token_details, None
 
 
 def to_ngrams(seq: list[str], n: int = 2) -> list[str]:
@@ -428,8 +600,19 @@ async def compare_code(payload: CompareRequest) -> CompareResponse:
     )
 
     # ── Step 1: Parse & normalise ─────────────────────────────────────────
-    tokens_a, details_a, error_a = parse_and_normalise(payload.code_a)
-    tokens_b, details_b, error_b = parse_and_normalise(payload.code_b)
+    lang = payload.language.lower()
+    if lang not in ["python", "cpp", "c", "java"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported language '{payload.language}'. Supported: python, cpp, c, java"
+        )
+
+    if lang == "python":
+        tokens_a, details_a, error_a = parse_and_normalise(payload.code_a)
+        tokens_b, details_b, error_b = parse_and_normalise(payload.code_b)
+    else:
+        tokens_a, details_a, error_a = parse_and_normalise_tree_sitter(payload.code_a, lang)
+        tokens_b, details_b, error_b = parse_and_normalise_tree_sitter(payload.code_b, lang)
 
     if error_a and error_b:
         raise HTTPException(

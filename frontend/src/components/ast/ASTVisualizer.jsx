@@ -131,9 +131,10 @@ function buildFlowGraph(tokens, highlightedIndex = -1) {
       parent.children.push(node);
     }
 
-    if (BLOCK_STARTS.has(node.type)) {
+    const baseType = node.type.split('(')[0];
+    if (BLOCK_STARTS.has(baseType)) {
       stack.push(node);
-    } else if (TERMINATORS.has(node.type)) {
+    } else if (TERMINATORS.has(baseType)) {
       stack.pop();
     }
   });
@@ -179,7 +180,13 @@ function buildFlowGraph(tokens, highlightedIndex = -1) {
 
   treeNodes.forEach((node) => {
     const isHighlighted = node.id === highlightedIndex;
-    const cfg = NODE_CONFIG[node.type] || DEFAULT_NODE;
+    const baseType = node.type.split('(')[0];
+    const cfg = NODE_CONFIG[baseType] || DEFAULT_NODE;
+
+    // Parse operator details if present (e.g., "Compare(<)" -> "cmp(<)")
+    const matches = node.type.match(/\(([^)]+)\)/);
+    const opVal = matches ? matches[1] : null;
+    const labelText = cfg.label ? (opVal ? `${cfg.label}(${opVal})` : cfg.label) : node.type;
 
     nodes.push({
       id: `n-${node.id}`,
@@ -197,7 +204,7 @@ function buildFlowGraph(tokens, highlightedIndex = -1) {
             <div style={{ fontSize: '7px', color: 'var(--text-muted)', marginBottom: '1px' }}>
               {`#${node.id}`}{node.lineno ? ` L${node.lineno}` : ''}
             </div>
-            {cfg.label || node.type}
+            {labelText}
           </div>
         ),
       },
