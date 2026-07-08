@@ -265,6 +265,31 @@ Expected output:
 
 ---
 
+## 🌐 Deployment
+This project is configured to be deployed easily for free:
+
+### 1. Deploy the Backend (FastAPI) on Render
+1. Sign up/Log in to [Render](https://render.com/).
+2. Create a new **Web Service** and connect this repository.
+3. Configure the settings:
+   - **Root Directory**: `backend`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python main.py` or `uvicorn main:app --host 0.0.0.0 --port $PORT`
+4. Set the **Instance Type** to **Free**.
+5. Deploy and copy your new backend service URL (e.g. `https://astguard-backend.onrender.com`).
+
+### 2. Deploy the Frontend (React + Vite) on Vercel
+1. Sign up/Log in to [Vercel](https://vercel.com/).
+2. Import this repository.
+3. Configure the settings:
+   - **Root Directory**: `frontend`
+   - **Framework Preset**: `Vite`
+   - **Environment Variables**: Add `VITE_API_BASE` and set it to your Render backend URL (e.g. `https://astguard-backend.onrender.com`).
+4. Click **Deploy**.
+
+---
+
 ## 📄 License
 
 MIT — free to use for academic and educational purposes.

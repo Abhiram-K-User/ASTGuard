@@ -836,10 +836,13 @@ print("Found 25 at index:", idx)
 # ===========================================================================
 
 if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    reload_mode = os.environ.get("RELOAD", "true").lower() == "true"
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
+        port=port,
+        reload=reload_mode,
         log_level="info",
     )
