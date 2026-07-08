@@ -5,11 +5,11 @@ import { API_BASE } from '../constants';
  * Sends two code snippets to the backend for AST + LCS analysis.
  * @returns {Promise<object>} CompareResponse
  */
-export async function compareCode(codeA, codeB) {
+export async function compareCode(codeA, codeB, language = 'python') {
   const res = await fetch(`${API_BASE}/api/compare`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code_a: codeA, code_b: codeB }),
+    body: JSON.stringify({ code_a: codeA, code_b: codeB, language }),
   });
 
   const data = await res.json();

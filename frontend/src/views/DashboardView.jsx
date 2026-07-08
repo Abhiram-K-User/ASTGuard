@@ -15,7 +15,7 @@ import ComplexityDashboard  from '../components/ComplexityDashboard';
 import ScoreRing            from '../components/ScoreRing';
 import ASTVisualizer        from '../components/ast/ASTVisualizer';
 import { compareCode }      from '../services/api';
-import { PLACEHOLDER_A, PLACEHOLDER_B } from '../constants';
+import { PLACEHOLDER_A, PLACEHOLDER_B, TEMPLATES } from '../constants';
 
 /* ── Verdict palette ─────────────────────────────────────────────────── */
 const VC = {
@@ -144,7 +144,7 @@ function computeDecorations(codeA, codeB) {
 }
 
 /* ── Monaco Editor Pane ──────────────────────────────────────────────── */
-function MonacoEditorPane({ label, value, onChange, error, decorations, isDark }) {
+function MonacoEditorPane({ label, value, onChange, error, decorations, isDark, language }) {
   const editorRef   = useRef(null);
   const monacoRef   = useRef(null);
   const decoIdsRef  = useRef([]);
@@ -202,7 +202,7 @@ function MonacoEditorPane({ label, value, onChange, error, decorations, isDark }
       <div style={{ flex:1, position:'relative' }}>
         <Editor
           height="320px"
-          language="python"
+          language={language}
           value={value}
           onChange={v => onChange(v || '')}
           theme={isDark ? 'sg-dark' : 'sg-light'}
@@ -257,6 +257,7 @@ function StatList({ stats }) {
 export default function DashboardView({ globalTab = 'analyze' }) {
   const { isDark } = useTheme();
 
+  const [language, setLanguage] = useState('python');
   const [codeA, setCodeA] = useState(PLACEHOLDER_A);
   const [codeB, setCodeB] = useState(PLACEHOLDER_B);
   const [result, setResult]   = useState(null);
@@ -267,17 +268,29 @@ export default function DashboardView({ globalTab = 'analyze' }) {
   const [decB, setDecB] = useState([]);
   const [visualizeTarget, setVisualizeTarget] = useState('A');
 
+  const handleLanguageChange = (lang) => {
+    setLanguage(lang);
+    setResult(null);
+    setDecA([]);
+    setDecB([]);
+    const template = TEMPLATES[lang];
+    if (template) {
+      setCodeA(template.code_a);
+      setCodeB(template.code_b);
+    }
+  };
+
   const handleAnalyze = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await compareCode(codeA, codeB);
+      const res = await compareCode(codeA, codeB, language);
       setResult(res);
       setActiveTab('verdict');
       const { decA: dA, decB: dB } = computeDecorations(codeA, codeB);
       setDecA(dA); setDecB(dB);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [codeA, codeB]);
+  }, [codeA, codeB, language]);
 
   const vc = result ? (VC[result.verdict] || VC.Safe) : null;
   const tokensAStr = result?.tokens_a || [];
@@ -377,12 +390,14 @@ export default function DashboardView({ globalTab = 'analyze' }) {
           value={codeA} onChange={setCodeA}
           error={result?.error_a}
           decorations={decA} isDark={isDark}
+          language={language}
         />
         <MonacoEditorPane
           label="Code B — Submission"
           value={codeB} onChange={setCodeB}
           error={result?.error_b}
           decorations={decB} isDark={isDark}
+          language={language}
         />
       </div>
 
@@ -402,7 +417,7 @@ export default function DashboardView({ globalTab = 'analyze' }) {
         </div>
       )}
 
-      {/* ── Run Analysis button ──────────────────────────────────────── */}
+      {/* ── Run Analysis button & Language dropdown ─────────────────── */}
       <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
         <button
           onClick={handleAnalyze}
@@ -423,6 +438,30 @@ export default function DashboardView({ globalTab = 'analyze' }) {
             ? <><Loader2 size={16} className="animate-spin" /> Analyzing…</>
             : <><Play size={16} fill="currentColor" /> Run Analysis</>}
         </button>
+
+        <select
+          value={language}
+          onChange={e => handleLanguageChange(e.target.value)}
+          disabled={loading}
+          style={{
+            padding: '10px 16px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--card-border)',
+            background: 'var(--card-bg)',
+            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            outline: 'none',
+            transition: 'all var(--t-fast)',
+          }}
+        >
+          <option value="python">Python</option>
+          <option value="cpp">C++</option>
+          <option value="java">Java</option>
+          <option value="c">C</option>
+        </select>
 
         {error && (
           <div style={{ display:'flex', gap:'8px', padding:'10px 16px', borderRadius:'var(--radius-md)',
