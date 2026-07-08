@@ -31,6 +31,8 @@ const TABS = [
   { key:'complexity', label:'Complexity',  icon:TrendingUp },
 ];
 
+const EDITOR_FONT_FAMILY = "'Fira Code', Consolas, 'Courier New', monospace";
+
 /* ── Monaco theme registration (once) ───────────────────────────────── */
 let _themesReady = false;
 function registerThemes(monaco) {
@@ -149,6 +151,12 @@ function MonacoEditorPane({ label, value, onChange, error, decorations, isDark, 
   const monacoRef   = useRef(null);
   const decoIdsRef  = useRef([]);
 
+  function syncEditorMetrics() {
+    if (!editorRef.current || !monacoRef.current) return;
+    monacoRef.current.editor.remeasureFonts();
+    editorRef.current.layout();
+  }
+
   function applyDecorations() {
     if (!editorRef.current || !monacoRef.current || !decorations?.length) {
       if (editorRef.current) decoIdsRef.current = editorRef.current.deltaDecorations(decoIdsRef.current, []);
@@ -170,6 +178,16 @@ function MonacoEditorPane({ label, value, onChange, error, decorations, isDark, 
   }
 
   useEffect(() => { applyDecorations(); }, [decorations]);
+
+  useEffect(() => {
+    syncEditorMetrics();
+  }, [isDark]);
+
+  useEffect(() => {
+    const onResize = () => syncEditorMetrics();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   return (
     <div
@@ -210,6 +228,14 @@ function MonacoEditorPane({ label, value, onChange, error, decorations, isDark, 
           onMount={(editor, monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco;
+            syncEditorMetrics();
+
+            if (document.fonts?.ready) {
+              document.fonts.ready.then(() => {
+                syncEditorMetrics();
+              });
+            }
+
             applyDecorations();
           }}
           options={{
@@ -224,7 +250,8 @@ function MonacoEditorPane({ label, value, onChange, error, decorations, isDark, 
             scrollbar:{ verticalScrollbarSize:8, horizontalScrollbarSize:8 },
             wordWrap:'off',
             contextmenu:false,
-            fontFamily:"var(--font-mono)",
+            fontFamily:EDITOR_FONT_FAMILY,
+            fontWeight:'400',
             fontLigatures:false,
           }}
         />
